@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rico 計算機</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .calculator {
+            background: white;
+            border-radius: 30px;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        /* 8セグメント液晶ディスプレイ */
+        .display {
+            background: #f0f0f0;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            position: relative;
+            border: 3px solid #d0d0d0;
+        }
+
+        .display::before {
+            content: '888888888888';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: rgba(240, 240, 240, 0.3);
+            font-size: 48px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            opacity: 0.2;
+        }
+
+        .display-text {
+            font-size: 48px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: #000;
+            position: relative;
+            z-index: 1;
+            word-break: break-all;
+            max-width: 100%;
+            text-align: right;
+        }
+
+        /* ボタングリッド */
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        button:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 数字ボタン */
+        .number-btn {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        }
+
+        /* 演算子ボタン */
+        .operator-btn {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            font-weight: bold;
+        }
+
+        /* =ボタン */
+        .equals-btn {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            grid-column: span 1;
+        }
+
+        /* メーカー表示 */
+        .brand {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff69b4;
+            font-family: 'Arial', sans-serif;
+            letter-spacing: 3px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display">
+            <div id="expression" style="font-size: 20px; color: #888; min-height: 30px; margin-bottom: 10px; text-align: right;"></div>
+            <div class="display-text" id="display">0</div>
+        </div>
+        
+        <div class="buttons">
+            <button class="operator-btn" onclick="inputOperator('+')">+</button>
+            <button class="operator-btn" onclick="inputOperator('−')">−</button>
+            <button class="operator-btn" onclick="inputOperator('×')">×</button>
+            <button class="operator-btn" onclick="inputOperator('÷')">÷</button>
+            
+            <button class="number-btn" onclick="inputNumber('7')">7</button>
+            <button class="number-btn" onclick="inputNumber('8')">8</button>
+            <button class="number-btn" onclick="inputNumber('9')">9</button>
+            <button class="equals-btn" onclick="calculate()">=</button>
+            
+            <button class="number-btn" onclick="inputNumber('4')">4</button>
+            <button class="number-btn" onclick="inputNumber('5')">5</button>
+            <button class="number-btn" onclick="inputNumber('6')">6</button>
+            <button class="number-btn" onclick="clear()">AC</button>
+            
+            <button class="number-btn" onclick="inputNumber('1')">1</button>
+            <button class="number-btn" onclick="inputNumber('2')">2</button>
+            <button class="number-btn" onclick="inputNumber('3')">3</button>
+            <button class="number-btn" onclick="backspace()">⌫</button>
+            
+            <button class="number-btn" onclick="inputNumber('0')">0</button>
+            <button class="number-btn" onclick="inputDecimal()">.</button>
+            <button class="operator-btn" onclick="inputPercent()">%</button>
+            <button class="operator-btn" onclick="toggleSign()">+/−</button>
+        </div>
+        
+        <div class="brand">rico</div>
+    </div>
+
+    <script>
+        let display = document.getElementById('display');
+        let expressionDisplay = document.getElementById('expression');
+        let currentValue = '0';
+        let previousValue = '';
+        let operator = '';
+        let expression = '';
+        const MAX_VALUE = 100000000;
+
+        function inputNumber(num) {
+            if (currentValue.length >= 12) return; // 12桁制限
+            
+            if (currentValue === '0' || currentValue === 'エラー') {
+                currentValue = num;
+            } else {
+                currentValue += num;
+            }
+            
+            // 最大値を超えないようにチェック
+            if (parseFloat(currentValue) > MAX_VALUE) {
+                currentValue = 'エラー';
+            }
+            
+            updateDisplay();
+            updateExpression();
+        }
+
+        function inputOperator(op) {
+            if (currentValue === 'エラー') {
+                clear();
+                return;
+            }
+            
+            if (previousValue && operator) {
+                calculate(false);
+            }
+            
+            previousValue = currentValue;
+            currentValue = '0';
+            operator = op;
+            expression = previousValue + ' ' + operator + ' ';
+            updateDisplay();
+            updateExpression();
+        }
+
+        function inputPercent() {
+            if (currentValue === 'エラー') {
+                clear();
+                return;
+            }
+            
+            currentValue = (parseFloat(currentValue) / 100).toString();
+            operator = '%';
+            expression = previousValue + ' ' + operator;
+            updateDisplay();
+            updateExpression();
+        }
+
+        function toggleSign() {
+            if (currentValue === 'エラー' || currentValue === '0') return;
+            
+            if (currentValue.startsWith('-')) {
+                currentValue = currentValue.slice(1);
+            } else {
+                currentValue = '-' + currentValue;
+            }
+            
+            updateDisplay();
+            updateExpression();
+        }
+
+        function calculate(showResult = true) {
+            if (!operator || !previousValue) return;
+            
+            let result;
+            const prev = parseFloat(previousValue);
+            const curr = parseFloat(currentValue);
+            
+            switch(operator) {
+                case '+':
+                    result = prev + curr;
+                    break;
+                case '−':
+                    result = prev - curr;
+                    break;
+                case '×':
+                    result = prev * curr;
+                    break;
+                case '÷':
+                    if (curr === 0) {
+                        currentValue = 'エラー';
+                        expression = '';
+                        updateDisplay();
+                        updateExpression();
+                        return;
+                    }
+                    result = prev / curr;
+                    break;
+                case '%':
+                    result = prev * curr / 100;
+                    break;
+            }
+            
+            // 最大値を超えないようにチェック
+            if (result > MAX_VALUE) {
+                currentValue = 'エラー';
+            } else {
+                // 小数点以下を適切に処理
+                result = Math.round(result * 100000000) / 100000000;
+                currentValue = result.toString();
+            }
+            
+            if (showResult) {
+                expression = previousValue + ' ' + operator + ' ' + curr + ' =';
+                updateExpression();
+            }
+            
+            previousValue = '';
+            operator = '';
+            updateDisplay();
+        }
+
+        function clear() {
+            // すべての状態変数を完全にリセット
+            currentValue = '0';
+            previousValue = '';
+            operator = '';
+            expression = '';
+            
+            // 表示も即座に'0'に設定
+            display.textContent = '0';
+            expressionDisplay.textContent = '';
+        }
+
+        function backspace() {
+            if (currentValue === 'エラー') {
+                clear();
+                return;
+            }
+            
+            if (currentValue.length > 1) {
+                currentValue = currentValue.slice(0, -1);
+            } else {
+                currentValue = '0';
+            }
+            updateDisplay();
+            updateExpression();
+        }
+
+        function inputDecimal() {
+            if (currentValue === 'エラー') {
+                currentValue = '0.';
+            } else if (!currentValue.includes('.')) {
+                currentValue += '.';
+            }
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            display.textContent = currentValue;
+        }
+
+        function updateExpression() {
+            if (operator && previousValue && currentValue !== '0') {
+                expressionDisplay.textContent = expression + ' ' + currentValue;
+            } else if (operator && previousValue && currentValue === '0') {
+                expressionDisplay.textContent = expression;
+            } else {
+                expressionDisplay.textContent = '';
+            }
+        }
+    </script>
+</body>
+</html>
+
